@@ -1,0 +1,21 @@
+{
+  "name": "CleanUP-After-Me",
+  "version": "0.0.0",
+  "description": "This little helper watches a directory and will cleanup (read delete) files if space gets scarse.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jasmin",
+    "start": "node ./index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Velrok/CleanUP-After-Me.git"
+  },
+  "dependencies": {
+    "coffee-script": "x",
+    "express": "3.x",
+    "optimist" : "0.3.x"
+  },
+  "author": "Waldemar Schwan",
+  "license": "BSD"
+}

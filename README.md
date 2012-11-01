@@ -1,10 +1,26 @@
-CleanUP-After-Me
-================
+# CleanUP-After-Me
+
 
 This little helper watches a directory and will cleanup (read delete) files if space gets scarse.
 
-Usage
-=====
+## requirements
+
+- python 2.7
+- pip
+- python packages
+  - sh
+
+## install
+Checkout the repo.
+
+Install all the python dependencies by running: 
+```
+./installDependencies.sh
+```
+Located in the project folder.
+
+
+## usage
 
 ```
 usage: cleanup.py [-h] -w WARN_LVL -c CRITICAL_LVL [-m MIN_FILE_SIZE]
@@ -32,7 +48,7 @@ optional arguments:
 ```
 
 
-License
-=======
+# License
 
-MIT
+**MIT**, aka do what you want.  
+Giving credit whould be greatly appreciated thou ;) .

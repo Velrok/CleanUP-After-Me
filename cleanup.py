@@ -49,7 +49,7 @@ def get_relavant_files(watch_dir, min_file_size):
 
 	return rel_files
 
-def get_to_secounds_factor(time_unit):
+def get_to_seconds_factor(time_unit):
 	if(time_unit == "s"):
 		return 1
 	if(time_unit == "m"):
@@ -92,7 +92,7 @@ except ValueError:
 	sys.exit("invalid time format: " + args.polling_interval + " call with -h for details.")
 
 time_unit = args.polling_interval[-1]
-to_sec_factor = get_to_secounds_factor(time_unit)
+to_sec_factor = get_to_seconds_factor(time_unit)
 
 if not to_sec_factor:
 	sys.exit("Can't parse time unit " + args.polling_interval + " call with -h for details.")
@@ -100,7 +100,7 @@ if not to_sec_factor:
 polling_interval = max(int(time_number * to_sec_factor), 1)
 
 print "Watching directory: " + watch_dir
-print "Polling every " + str(polling_interval) + " secounds."
+print "Polling every " + str(polling_interval) + " seconds."
 print "Ignoring files smaller than " + str(min_file_size) + "MB."
 print "Starting to delte files if free space drops below " + str(critical_lvl) + "MB, until " + str(warn_lvl) + "MB are free again."
 

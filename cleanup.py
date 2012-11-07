@@ -74,6 +74,8 @@ parser.add_argument('-m', '--min-file-size', type=float , default=100,
 	help="Minimun file size in MB. Files smaller will be ignored.")
 parser.add_argument('-p', '--polling-interval', type=str , default="12h", 
 	help="Checking / deleting interval: <number>(s|m|h|d)")
+parser.add_argument('-n', '--no-deleting', type=bool , default=False, 
+	help="Set -n True to disable deleting. This is mainly for testing.")
 parser.add_argument('watch_dir', help="Directory to operate on.")
 
 
@@ -84,6 +86,7 @@ warn_lvl = args.warn_lvl
 critical_lvl = args.critical_lvl
 watch_dir = os.path.abspath(args.watch_dir)
 min_file_size = args.min_file_size
+dont_delete = args.no_deleting
 
 time_number = 0
 try:
@@ -116,8 +119,9 @@ while True:
 
 		if free_mb < critical_lvl:
 			for doomed in deletion_candidates:
-				rm(doomed[2])
-				print "REMOVED: " + str(doomed[2])
+				if( not dont_delete):
+					rm(doomed[2])
+					print "REMOVED: " + str(doomed[2])
 
 		if free_mb < warn_lvl:
 			relevant_files = sorted(get_relavant_files(watch_dir, min_file_size), key=lambda e: e[0])

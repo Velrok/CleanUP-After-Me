@@ -5,9 +5,12 @@ import re
 import sys
 import time
 
+from email.mime.text import MIMEText
+
 from sh import df
 from sh import grep
 from sh import rm
+from sh import sendmail
 
 ####################################
 #	helper functions
@@ -60,6 +63,25 @@ def get_to_seconds_factor(time_unit):
 		return 60 * 60 * 24
 	return None
 
+def annouce_del_candidates(candidates):
+	if (args.email_to):
+		msg = MIMEText("\n".join(map(str, candidates)))
+
+		msg['Subject'] = "[cleanup-after-me] this files will be deleted in the next %.0i secounds" % polling_interval
+		msg['From']    = args.email_from
+		msg['To']      = args.email_to
+
+		sendmail(args.email_to, _in=msg.as_string())
+
+def annouce_deletions(deletions):
+	if (args.email_to):
+		msg = MIMEText("\n".join(map(str, deletions)))
+
+		msg['Subject'] = "[cleanup-after-me] this files have been DELETED"
+		msg['From']    = args.email_from
+		msg['To']      = args.email_to
+
+		sendmail(args.email_to, _in=msg.as_string())
 
 
 ####################################
@@ -76,17 +98,25 @@ parser.add_argument('-p', '--polling-interval', type=str , default="12h",
 	help="Checking / deleting interval: <number>(s|m|h|d)")
 parser.add_argument('-n', '--no-deleting', type=bool , default=False, 
 	help="Set -n True to disable deleting. This is mainly for testing.")
+
+parser.add_argument('--email-from', type=str , default="cleanup-after-me", 
+	help="The email adress used in the notification mail.")
+parser.add_argument('--email-to', type=str ,
+	help="The email adress to send the notifications to. If this argument issnt set no emails will be send.")
+
 parser.add_argument('watch_dir', help="Directory to operate on.")
 
 
 
 args = parser.parse_args()
 
-warn_lvl = args.warn_lvl
-critical_lvl = args.critical_lvl
-watch_dir = os.path.abspath(args.watch_dir)
+warn_lvl      = args.warn_lvl
+critical_lvl  = args.critical_lvl
+if (critical_lvl >= warn_lvl):
+	sys.exit("critical_lvl has to be lower that warn_lvl");
+watch_dir     = os.path.abspath(args.watch_dir)
 min_file_size = args.min_file_size
-dont_delete = args.no_deleting
+dont_delete   = args.no_deleting
 
 time_number = 0
 try:
@@ -118,10 +148,11 @@ while True:
 		print time.strftime("%a, %d %b %Y %H:%M:%S") + " checking...  free: " + str(free_mb) + " warning: " + str(warn_lvl) + " critial: " + str(critical_lvl)
 
 		if free_mb < critical_lvl:
-			for doomed in deletion_candidates:
-				if( not dont_delete):
+			if( not dont_delete):
+				for doomed in deletion_candidates:
 					rm(doomed[2])
 					print "REMOVED: " + str(doomed[2])
+				annouce_deletions(map(lambda e: e[2], deletion_candidates))
 
 		if free_mb < warn_lvl:
 			relevant_files = sorted(get_relavant_files(watch_dir, min_file_size), key=lambda e: e[0])
@@ -136,8 +167,11 @@ while True:
 			diff = (new_del_candidates - deletion_candidates)
 			if (len(diff) > 0):
 				print "This files might be deleted in the next run:"
-			for candidate in diff:
-				print candidate[2]
+
+				annouce_del_candidates(map(lambda e: e[2], diff))
+
+				for candidate in diff:
+					print candidate[2]
 
 			deletion_candidates = new_del_candidates
 

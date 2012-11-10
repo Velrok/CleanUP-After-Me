@@ -36,6 +36,9 @@ def file_size_mb(filename):
 def get_last_access(filename):
 	return os.stat(filename).st_atime
 
+def get_last_modified(filename):
+	return os.stat(filename).st_mtime
+
 def get_relavant_files(watch_dir, min_file_size):
 	rel_files = []
 
@@ -43,9 +46,9 @@ def get_relavant_files(watch_dir, min_file_size):
 		abs_files = map(lambda ff: os.path.join(os.path.abspath(root), ff) , files)
 		filtered = [i for i in abs_files if file_size_mb(i) > min_file_size]
 		for f in filtered:
-			last_access = get_last_access(f)
+			order_criteria = get_last_modified(f)
 			size = file_size_mb(f)
-			rel_files.append((last_access, size, f))
+			rel_files.append((order_criteria, size, f))
 
 		for d in dirs:
 			rel_files = rel_files + get_relavant_files(d, min_file_size)

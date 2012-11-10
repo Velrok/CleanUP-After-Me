@@ -1,26 +1,29 @@
 # CleanUP-After-Me
 
 
-This little helper watches a directory and will cleanup (read delete) files if space gets scarse.
+This little helper watches a directory and will cleanup (read delete) files if space gets scarce.
 
-## requirements
+## Requirements
 
 - python 2.7
 - pip
 - python packages
   - sh
 
-## install
+## Install
+
 Checkout the repo.
 
-Install all the python dependencies by running: 
+Install all the python dependencies by running:
+
 ```
 ./installDependencies.sh
 ```
-Located in the project folder.
+
+This script is located in the project folder.
 
 
-## usage
+## Usage
 
 ```
 usage: cleanup.py [-h] -w WARN_LVL -c CRITICAL_LVL [-m MIN_FILE_SIZE]

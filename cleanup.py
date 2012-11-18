@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import time
+import humanize_time
 
 from email.mime.text import MIMEText
 
@@ -66,25 +67,31 @@ def get_to_seconds_factor(time_unit):
 		return 60 * 60 * 24
 	return None
 
+def send_email(frm, to, subject, text):
+	if("__iter__" in dir(to)):
+		to = ",".join(to)
+
+	msg = MIMEText(text)
+
+	msg['Subject'] = subject
+	msg['From']    = frm
+	msg['To']      = to
+
+	sendmail(to, _in=msg.as_string())
+	print "mail send: %s" % msg.as_string()
+
+
 def annouce_del_candidates(candidates):
 	if (args.email_to):
-		msg = MIMEText("\n".join(map(str, candidates)))
-
-		msg['Subject'] = "[cleanup-after-me] this files will be deleted in the next %.0i secounds" % polling_interval
-		msg['From']    = args.email_from
-		msg['To']      = ",".join(args.email_to)
-
-		sendmail(",".join(args.email_to), _in=msg.as_string())
+		subject = "[cleanup-after-me] this files will be deleted in the next %.0i secounds" % polling_interval
+		text = "\n".join(map(str, candidates))
+		send_email(args.email_from, args.email_to, subject, text)
 
 def annouce_deletions(deletions):
 	if (args.email_to):
-		msg = MIMEText("\n".join(map(str, deletions)))
-
-		msg['Subject'] = "[cleanup-after-me] this files have been DELETED"
-		msg['From']    = args.email_from
-		msg['To']      = ",".join(args.email_to)
-
-		sendmail(",".join(args.email_to), _in=msg.as_string())
+		subject = "[cleanup-after-me] this files have been DELETED"
+		text = "\n".join(map(str, deletions))
+		send_email(args.email_from, args.email_to, subject, text)
 
 
 ####################################

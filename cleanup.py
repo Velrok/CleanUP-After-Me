@@ -37,7 +37,7 @@ def get_last_access(filename):
 	return os.stat(filename).st_atime
 
 def get_last_modified(filename):
-	return os.stat(filename).st_mtime
+	return os.stat(filename).st_ctime
 
 def get_relavant_files(watch_dir, min_file_size):
 	rel_files = []
@@ -72,9 +72,9 @@ def annouce_del_candidates(candidates):
 
 		msg['Subject'] = "[cleanup-after-me] this files will be deleted in the next %.0i secounds" % polling_interval
 		msg['From']    = args.email_from
-		msg['To']      = args.email_to
+		msg['To']      = ",".join(args.email_to)
 
-		sendmail(args.email_to, _in=msg.as_string())
+		sendmail(",".join(args.email_to), _in=msg.as_string())
 
 def annouce_deletions(deletions):
 	if (args.email_to):
@@ -82,9 +82,9 @@ def annouce_deletions(deletions):
 
 		msg['Subject'] = "[cleanup-after-me] this files have been DELETED"
 		msg['From']    = args.email_from
-		msg['To']      = args.email_to
+		msg['To']      = ",".join(args.email_to)
 
-		sendmail(args.email_to, _in=msg.as_string())
+		sendmail(",".join(args.email_to), _in=msg.as_string())
 
 
 ####################################
@@ -104,7 +104,7 @@ parser.add_argument('-n', '--no-deleting', type=bool , default=False,
 
 parser.add_argument('--email-from', type=str , default="cleanup-after-me", 
 	help="The email adress used in the notification mail.")
-parser.add_argument('--email-to', type=str ,
+parser.add_argument('--email-to', type=str , nargs='*',
 	help="The email adress to send the notifications to. If this argument issnt set no emails will be send.")
 
 parser.add_argument('watch_dir', help="Directory to operate on.")
@@ -178,7 +178,7 @@ while True:
 
 			deletion_candidates = new_del_candidates
 
-
+		sys.stdout.flush()
 		time.sleep(polling_interval)
 	except KeyboardInterrupt:
 		print "Got KeyboardInterrupt. Bye :) ."

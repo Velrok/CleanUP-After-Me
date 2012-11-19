@@ -4,12 +4,16 @@ import os
 import re
 import sys
 import time
+import humanize
+
+from email.mime.text import MIMEText
 
 import str_parser as sp
 
 from sh import df
 from sh import grep
 from sh import rm
+from sh import sendmail
 
 ####################################
 #	helper functions
@@ -35,6 +39,9 @@ def file_size_mb(filename):
 def get_last_access(filename):
 	return os.stat(filename).st_atime
 
+def get_last_modified(filename):
+	return os.stat(filename).st_ctime
+
 def get_relavant_files(watch_dir, min_file_size):
 	rel_files = []
 
@@ -42,9 +49,9 @@ def get_relavant_files(watch_dir, min_file_size):
 		abs_files = map(lambda ff: os.path.join(os.path.abspath(root), ff) , files)
 		filtered = [i for i in abs_files if file_size_mb(i) > min_file_size]
 		for f in filtered:
-			last_access = get_last_access(f)
+			order_criteria = get_last_modified(f)
 			size = file_size_mb(f)
-			rel_files.append((last_access, size, f))
+			rel_files.append((order_criteria, size, f))
 
 		for d in dirs:
 			rel_files = rel_files + get_relavant_files(d, min_file_size)
@@ -62,6 +69,30 @@ def get_to_seconds_factor(time_unit):
 		return 60 * 60 * 24
 	return None
 
+def send_email(frm, to, subject, text):
+	if("__iter__" in dir(to)):
+		to = ",".join(to)
+
+	msg = MIMEText(text)
+
+	msg['Subject'] = subject
+	msg['From']    = frm
+	msg['To']      = to
+
+	sendmail(to, _in=msg.as_string())
+
+
+def annouce_del_candidates(candidates):
+	if (args.email_to):
+		subject = "[cleanup-after-me] this files will be deleted in %s" % humanize.naturaltime(polling_interval, future=True)
+		text = "\n".join(map(str, candidates))
+		send_email(args.email_from, args.email_to, subject, text)
+
+def annouce_deletions(deletions):
+	if (args.email_to):
+		subject = "[cleanup-after-me] this files have been DELETED"
+		text = "\n".join(map(str, deletions))
+		send_email(args.email_from, args.email_to, subject, text)
 
 
 ####################################
@@ -78,17 +109,27 @@ parser.add_argument('-p', '--polling-interval', type=str , default="12h",
 	help="Checking / deleting interval: <number>(s|m|h|d)")
 parser.add_argument('-n', '--no-deleting', type=bool , default=False, 
 	help="Set -n True to disable deleting. This is mainly for testing.")
+
+parser.add_argument('--email-from', type=str , default="cleanup-after-me", 
+	help="The email adress used in the notification mail.")
+parser.add_argument('--email-to', type=str , nargs='*',
+	help="The email adress to send the notifications to. If this argument issnt set no emails will be send.")
+
 parser.add_argument('watch_dir', help="Directory to operate on.")
 
 
 
 args = parser.parse_args()
 
-warn_lvl = int(sp.extract_kb(args.warn_lvl) / 1024)
-critical_lvl = int(sp.extract_kb(args.critical_lvl) / 1024)
-watch_dir = os.path.abspath(args.watch_dir)
+warn_lvl      = int(sp.extract_kb(args.warn_lvl) / 1024)
+critical_lvl  = int(sp.extract_kb(args.critical_lvl) / 1024)
 min_file_size = int(sp.extract_kb(args.min_file_size) / 1024)
-dont_delete = args.no_deleting
+watch_dir     = os.path.abspath(args.watch_dir)
+dont_delete   = args.no_deleting
+
+if (critical_lvl >= warn_lvl):
+	sys.exit("critical_lvl has to be lower that warn_lvl");
+
 
 polling_interval = max(sp.extract_secounds(args.polling_interval), 1)
 
@@ -108,10 +149,11 @@ while True:
 		print time.strftime("%a, %d %b %Y %H:%M:%S") + " checking...  free: %.1f warning: %.1f critial: %.1f" % (free_mb, warn_lvl, critical_lvl)
 
 		if free_mb < critical_lvl:
-			for doomed in deletion_candidates:
-				if( not dont_delete):
+			if( not dont_delete):
+				for doomed in deletion_candidates:
 					rm(doomed[2])
 					print "REMOVED: %s" % doomed[2]
+				annouce_deletions(map(lambda e: e[2], deletion_candidates))
 
 		if free_mb < warn_lvl:
 			relevant_files = sorted(get_relavant_files(watch_dir, min_file_size), key=lambda e: e[0])
@@ -126,12 +168,15 @@ while True:
 			diff = (new_del_candidates - deletion_candidates)
 			if (len(diff) > 0):
 				print "This files might be deleted in the next run:"
-			for candidate in diff:
-				print candidate[2]
+
+				annouce_del_candidates(map(lambda e: e[2], diff))
+
+				for candidate in diff:
+					print candidate[2]
 
 			deletion_candidates = new_del_candidates
 
-
+		sys.stdout.flush()
 		time.sleep(polling_interval)
 	except KeyboardInterrupt:
 		print "Got KeyboardInterrupt. Bye :) ."

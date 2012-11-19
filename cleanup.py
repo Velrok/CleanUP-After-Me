@@ -5,6 +5,8 @@ import re
 import sys
 import time
 
+import str_parser as sp
+
 from sh import df
 from sh import grep
 from sh import rm
@@ -67,11 +69,11 @@ def get_to_seconds_factor(time_unit):
 ####################################
 parser = argparse.ArgumentParser(description='Removes files of disk space gets scares.')
 parser.add_argument('-w', '--warn-lvl', type=int , required=True, 
-	help="Start warning if free spaces gets less than this (in MB).")
+	help="Start warning if free spaces gets less than this. Format: <int>[K|M|G|T]")
 parser.add_argument('-c', '--critical-lvl', type=int , required=True, 
-	help="Start deleting files if free space is below CRITICAL-LVL MB until, WARN-LVL MB are free again.")
+	help="Start deleting files if free space is below CRITICAL-LVL, WARN-LVL. Format: <int>[K|M|G|T]")
 parser.add_argument('-m', '--min-file-size', type=float , default=100, 
-	help="Minimun file size in MB. Files smaller will be ignored.")
+	help="Minimun file size. Files smaller will be ignored. Format: <int>[K|M|G|T]")
 parser.add_argument('-p', '--polling-interval', type=str , default="12h", 
 	help="Checking / deleting interval: <number>(s|m|h|d)")
 parser.add_argument('-n', '--no-deleting', type=bool , default=False, 
@@ -82,30 +84,18 @@ parser.add_argument('watch_dir', help="Directory to operate on.")
 
 args = parser.parse_args()
 
-warn_lvl = args.warn_lvl
-critical_lvl = args.critical_lvl
+warn_lvl = int(sp.extract_kb(args.warn_lvl) / 1024)
+critical_lvl = int(sp.extract_kb(args.critical_lvl) / 1024)
 watch_dir = os.path.abspath(args.watch_dir)
-min_file_size = args.min_file_size
+min_file_size = int(sp.extract_kb(args.min_file_size) / 1024)
 dont_delete = args.no_deleting
 
-time_number = 0
-try:
-	time_number = int(args.polling_interval[:len(args.polling_interval)-1])
-except ValueError:
-	sys.exit("invalid time format: " + args.polling_interval + " call with -h for details.")
-
-time_unit = args.polling_interval[-1]
-to_sec_factor = get_to_seconds_factor(time_unit)
-
-if not to_sec_factor:
-	sys.exit("Can't parse time unit " + args.polling_interval + " call with -h for details.")
-
-polling_interval = max(int(time_number * to_sec_factor), 1)
+polling_interval = max(sp.extract_secounds(args.polling_interval), 1)
 
 print "Watching directory: " + watch_dir
-print "Polling every " + str(polling_interval) + " seconds."
-print "Ignoring files smaller than " + str(min_file_size) + "MB."
-print "Starting to delte files if free space drops below " + str(critical_lvl) + "MB, until " + str(warn_lvl) + "MB are free again."
+print "Polling every %.1f seconds." % polling_interval
+print "Ignoring files smaller than %.1fMB." % min_file_size
+print "Starting to delte files if free space drops below %.1fMB, until %.1fMB are free again." % (critical_lvl, warn_lvl)
 
 ####################################
 #	main
@@ -115,13 +105,13 @@ deletion_candidates = set()
 while True:
 	try:
 		free_mb = get_free_mb(watch_dir)
-		print time.strftime("%a, %d %b %Y %H:%M:%S") + " checking...  free: " + str(free_mb) + " warning: " + str(warn_lvl) + " critial: " + str(critical_lvl)
+		print time.strftime("%a, %d %b %Y %H:%M:%S") + " checking...  free: %.1f warning: %.1f critial: %.1f" % (free_mb, warn_lvl, critical_lvl)
 
 		if free_mb < critical_lvl:
 			for doomed in deletion_candidates:
 				if( not dont_delete):
 					rm(doomed[2])
-					print "REMOVED: " + str(doomed[2])
+					print "REMOVED: %s" % doomed[2]
 
 		if free_mb < warn_lvl:
 			relevant_files = sorted(get_relavant_files(watch_dir, min_file_size), key=lambda e: e[0])

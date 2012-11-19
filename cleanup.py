@@ -4,7 +4,7 @@ import os
 import re
 import sys
 import time
-import humanize_time
+import humanize
 
 from email.mime.text import MIMEText
 
@@ -78,12 +78,11 @@ def send_email(frm, to, subject, text):
 	msg['To']      = to
 
 	sendmail(to, _in=msg.as_string())
-	print "mail send: %s" % msg.as_string()
 
 
 def annouce_del_candidates(candidates):
 	if (args.email_to):
-		subject = "[cleanup-after-me] this files will be deleted in the next %.0i secounds" % polling_interval
+		subject = "[cleanup-after-me] this files will be deleted in %s" % humanize.naturaltime(polling_interval, future=True)
 		text = "\n".join(map(str, candidates))
 		send_email(args.email_from, args.email_to, subject, text)
 

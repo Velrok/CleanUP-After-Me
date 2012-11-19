@@ -99,11 +99,11 @@ def annouce_deletions(deletions):
 #	argument parsing
 ####################################
 parser = argparse.ArgumentParser(description='Removes files of disk space gets scares.')
-parser.add_argument('-w', '--warn-lvl', type=int , required=True, 
+parser.add_argument('-w', '--warn-lvl', type=str , required=True, 
 	help="Start warning if free spaces gets less than this. Format: <int>[K|M|G|T]")
-parser.add_argument('-c', '--critical-lvl', type=int , required=True, 
+parser.add_argument('-c', '--critical-lvl', type=str , required=True, 
 	help="Start deleting files if free space is below CRITICAL-LVL, WARN-LVL. Format: <int>[K|M|G|T]")
-parser.add_argument('-m', '--min-file-size', type=float , default=100, 
+parser.add_argument('-m', '--min-file-size', type=str , default=100, 
 	help="Minimun file size. Files smaller will be ignored. Format: <int>[K|M|G|T]")
 parser.add_argument('-p', '--polling-interval', type=str , default="12h", 
 	help="Checking / deleting interval: <number>(s|m|h|d)")
